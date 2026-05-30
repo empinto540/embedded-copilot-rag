@@ -1,0 +1,62 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: embedded-ai-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - datasheets_data:/app/datasheets
+    depends_on:
+      - ollama
+      - chromadb
+    networks:
+      - embedded-ai-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: embedded-ai-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+    networks:
+      - embedded-ai-network
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: embedded-ai-chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/data
+    networks:
+      - embedded-ai-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: embedded-ai-frontend
+    ports:
+      - "8501:8501"
+    depends_on:
+      - backend
+    networks:
+      - embedded-ai-network
+
+networks:
+  embedded-ai-network:
+    driver: bridge
+
+volumes:
+  ollama_data:
+  chroma_data:
+  datasheets_data:
